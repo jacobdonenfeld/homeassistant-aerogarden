@@ -1,39 +1,41 @@
+import base64
 import logging
 import urllib
-import requests
-import base64
-
-import voluptuous as vol
 from datetime import timedelta
 
-
-from homeassistant.helpers.discovery import load_platform
 import homeassistant.helpers.config_validation as cv
-from homeassistant.const import CONF_USERNAME, CONF_PASSWORD, CONF_HOST
+import requests
+import voluptuous as vol
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 from requests import RequestException
 
 _LOGGER = logging.getLogger(__name__)
 
-DOMAIN = 'aerogarden'
-SENSOR_PREFIX = 'aerogarden'
-DATA_AEROGARDEN = 'AEROGARDEN'
+DOMAIN = "aerogarden"
+SENSOR_PREFIX = "aerogarden"
+DATA_AEROGARDEN = "AEROGARDEN"
 DEFAULT_HOST = "https://app3.aerogarden.com:8443"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
-CONFIG_SCHEMA = vol.Schema({
-    DOMAIN: vol.Schema({
-        vol.Required(CONF_USERNAME): cv.string,
-        vol.Required(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
-    })
-}, extra=vol.ALLOW_EXTRA)
+CONFIG_SCHEMA = vol.Schema(
+    {
+        DOMAIN: vol.Schema(
+            {
+                vol.Required(CONF_USERNAME): cv.string,
+                vol.Required(CONF_PASSWORD): cv.string,
+                vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
+            }
+        )
+    },
+    extra=vol.ALLOW_EXTRA,
+)
 
 
 class AerogardenAPI:
-
     def __init__(self, username, password, host=None):
         self._username = urllib.parse.quote(username)
         self._password = urllib.parse.quote(password)
@@ -48,7 +50,7 @@ class AerogardenAPI:
 
         self._headers = {
             "User-Agent": "HA-Aerogarden/0.1",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         }
 
         self.login()
@@ -83,11 +85,11 @@ class AerogardenAPI:
         return
 
     def garden_name(self, macaddr):
-        multi_garden = self.garden_property(macaddr, 'chooseGarden')
+        multi_garden = self.garden_property(macaddr, "chooseGarden")
         if not multi_garden:
             return self.garden_property(macaddr, "plantedName")
-        multi_garden_label = 'left' if multi_garden == 0 else 'right'
-        return self.garden_property(macaddr, "plantedName") + '_' + multi_garden_label
+        multi_garden_label = "left" if multi_garden == 0 else "right"
+        return self.garden_property(macaddr, "plantedName") + "_" + multi_garden_label
 
     def garden_property(self, macaddr, field):
 
@@ -111,7 +113,8 @@ class AerogardenAPI:
             "airGuid": macaddr,
             "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
             "userID": self._userid,
-            "plantConfig":  "{ \"lightTemp\" : %d }" % (self.garden_property(macaddr, "lightTemp"))
+            "plantConfig": '{ "lightTemp" : %d }'
+            % (self.garden_property(macaddr, "lightTemp"))
             # TODO: Light Temp may not matter, check.
         }
         url = self._host + self._update_url
@@ -129,7 +132,9 @@ class AerogardenAPI:
             if results["code"] == 1:
                 return True
 
-        self._error_msg = "Didn't get code 1 from update API call: %s" % (results["msg"])
+        self._error_msg = "Didn't get code 1 from update API call: %s" % (
+            results["msg"]
+        )
         self.update(no_throttle=True)
 
         return False
@@ -156,13 +161,16 @@ class AerogardenAPI:
         garden_data = r.json()
 
         if "Message" in garden_data:
-            self._error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (garden_data["Message"])
+            self._error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (
+                garden_data["Message"]
+            )
             return False
 
         for garden in garden_data:
             if "plantedName" in garden:
-                garden["plantedName"] = \
-                    base64.b64decode(garden["plantedName"]).decode('utf-8')
+                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
+                    "utf-8"
+                )
 
             # Seems to be for multigarden config, untested, adapted from
             # https://github.com/JeremyKennedy/homeassistant-aerogarden/commit/5854477c35103d724b86490b90e286b5d74f6660
@@ -175,7 +183,7 @@ class AerogardenAPI:
 
 
 def setup(hass, config):
-    """ Setup the aerogarden platform """
+    """Setup the aerogarden platform"""
 
     username = config[DOMAIN].get(CONF_USERNAME)
     password = config[DOMAIN].get(CONF_PASSWORD)
@@ -191,9 +199,8 @@ def setup(hass, config):
     # store the Aerogarden API object into hass data system
     hass.data[DATA_AEROGARDEN] = ag
 
-    load_platform(hass, 'sensor', DOMAIN, {}, config)
-    load_platform(hass, 'binary_sensor', DOMAIN, {}, config)
-    load_platform(hass, 'light', DOMAIN, {}, config)
+    load_platform(hass, "sensor", DOMAIN, {}, config)
+    load_platform(hass, "binary_sensor", DOMAIN, {}, config)
+    load_platform(hass, "light", DOMAIN, {}, config)
 
     return True
-

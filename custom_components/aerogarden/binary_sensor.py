@@ -6,11 +6,10 @@ from .. import aerogarden
 
 _LOGGER = logging.getLogger(__name__)
 
-DEPENDENCIES = ['aerogarden']
+DEPENDENCIES = ["aerogarden"]
 
 
 class AerogardenBinarySensor(BinarySensorEntity):
-
     def __init__(self, macaddr, aerogarden_api, field, label=None, icon=None):
         self._aerogarden = aerogarden_api
         self._macaddr = macaddr
@@ -65,13 +64,17 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         "pumpHydro": {
             "label": "Needs water",
             "icon": "mdi:water",
-        }
+        },
     }
 
     for garden in ag.gardens:
 
         for field in sensor_fields.keys():
             s = sensor_fields[field]
-            sensors.append(AerogardenBinarySensor(garden, ag, field, label=s["label"], icon=s["icon"]))
+            sensors.append(
+                AerogardenBinarySensor(
+                    garden, ag, field, label=s["label"], icon=s["icon"]
+                )
+            )
 
     add_entities(sensors)
