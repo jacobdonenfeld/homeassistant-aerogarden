@@ -174,10 +174,11 @@ class AerogardenAPI:
 
             # Seems to be for multigarden config, untested, adapted from
             # https://github.com/JeremyKennedy/homeassistant-aerogarden/commit/5854477c35103d724b86490b90e286b5d74f6660
-            # id = garden.get("configID", None)
-            garden_mac = garden["airGuid"]  # + "-" + ("" if id is None else str(id))
+            id = garden.get("configID", None)
+            garden_mac = garden["airGuid"] + "-" + ("" if id is None else str(id))
             data[garden_mac] = garden
 
+        _LOGGER.debug("Updating data {}".format(data))
         self._data = data
         return True
 

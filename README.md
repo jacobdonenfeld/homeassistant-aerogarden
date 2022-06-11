@@ -19,7 +19,7 @@ Currently, the code is setup to query the AeroGarden servers every 30 seconds.
 (I expect other models to work, since this queries their cloud service not the garden directly)
 
 ## Setup
-Copy contents of the aerogarden/ directory into your <HA-CONFIG>/custom_components/aerogarden directory (```/config/custom_components``` on hassio)
+Copy contents of the custom_compents/aerogarden/ directory into your <HA-CONFIG>/custom_components/aerogarden directory (```/config/custom_components``` on hassio)
 
 Your directory structure should look like this:
 ```
@@ -55,7 +55,7 @@ The component supports multiple gardens and multiple sensors will be created for
 * sensor.aerogarden_[GARDEN NAME]_planted
 
 ### Sample screenshot
-![Screen Shot](https://raw.githubusercontent.com/ksheumaker/homeassistant-aerogarden/master/screen_shot.png)
+![Screen Shot](https://raw.githubusercontent.com/jacobdonenfeld/homeassistant-aerogarden/master/screen_shot.png)
 
 ## TODO
 1. Code cleanup, this is my first HA component - it probably needs some work.
