@@ -44,20 +44,19 @@ The component supports multiple gardens and multiple sensors will be created for
 
 ### Light
 * light.aerogarden_[GARDEN NAME]_light
-  
-### Binary Sensors (on/off) 
+
+### Binary Sensors (on/off)
 * binary_sensor.aerogarden_[GARDEN NAME]_pump
 * binary_sensor.aerogarden_[GARDEN NAME]_need_nutrients
 * binary_sensor.aerogarden_[GARDEN NAME]_need_water
-  
+
 ### Sensors
 * sensor.aerogarden_[GARDEN NAME]_nutrient
 * sensor.aerogarden_[GARDEN NAME]_planted
 
 ### Sample screenshot
 ![Screen Shot](https://raw.githubusercontent.com/ksheumaker/homeassistant-aerogarden/master/screen_shot.png)
-  
+
 ## TODO
 1. Code cleanup, this is my first HA component - it probably needs some work.
 1. Turning on/off the light isn't working as smoothly as I hoped
-
