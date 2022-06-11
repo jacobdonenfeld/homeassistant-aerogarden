@@ -1,6 +1,5 @@
 import logging
 
-
 from homeassistant.helpers.entity import Entity
 from .. import aerogarden
 
@@ -8,10 +7,10 @@ _LOGGER = logging.getLogger(__name__)
 
 DEPENDENCIES = ['aerogarden']
 
+
 class AerogardenSensor(Entity):
 
     def __init__(self, macaddr, aerogarden_api, field, label=None, icon=None, unit=None):
-
         self._aerogarden = aerogarden_api
         self._macaddr = macaddr
         self._field = field
@@ -21,11 +20,13 @@ class AerogardenSensor(Entity):
         self._icon = icon
         self._unit = unit
 
-        self._garden_name = self._aerogarden.garden_property(self._macaddr, "plantedName")
+        self._garden_name = self._aerogarden.garden_name(self._macaddr)
 
-        self._name = "%s %s %s" % (aerogarden.SENSOR_PREFIX, self._garden_name, self._label)
+        self._name = "%s %s" % (
+            self._garden_name,
+            self._label,
+        )
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
 
     @property
     def name(self):
@@ -51,28 +52,30 @@ class AerogardenSensor(Entity):
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """ Setup the aerogarden platform """
 
-
     ag = hass.data[aerogarden.DATA_AEROGARDEN]
 
     sensors = []
-    sensor_fields = { 
-        "plantedDay" : { 
-            "label" : "planted",
-            "icon" : "mdi:calendar",
-            "unit" : "Days"
+    sensor_fields = {
+        "plantedDay": {
+            "label": "Planted Days",
+            "icon": "mdi:calendar",
+            "unit": "Days"
         },
-        "nutriRemindDay" : { 
-            "label" : "nutrient",
-            "icon" : "mdi:calendar-clock",
-            "unit" : "Days"
+        "nutriRemindDay": {
+            "label": "Nutrient Days",
+            "icon": "mdi:calendar-clock",
+            "unit": "Days"
+        },
+        "pumpLevel": {
+            "label": "pump_level",
+            "icon": "mdi:water-percent",
+            "unit": "Fill Level"
         },
     }
 
     for garden in ag.gardens:
-
         for field in sensor_fields.keys():
-             s = sensor_fields[field]
-             sensors.append(AerogardenSensor(garden, ag, field, label=s["label"], icon=s["icon"], unit=s["unit"]))
+            s = sensor_fields[field]
+            sensors.append(AerogardenSensor(garden, ag, field, label=s["label"], icon=s["icon"], unit=s["unit"]))
 
     add_entities(sensors)
-
