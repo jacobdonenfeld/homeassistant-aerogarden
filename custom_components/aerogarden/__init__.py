@@ -183,12 +183,14 @@ class AerogardenAPI:
         return True
 
 
-def setup(hass, config):
+def setup(hass, config: dict):
     """Setup the aerogarden platform"""
 
-    username = config[DOMAIN].get(CONF_USERNAME)
-    password = config[DOMAIN].get(CONF_PASSWORD)
-    host = config[DOMAIN].get(CONF_HOST)
+    domain_config = config.get(DOMAIN)
+
+    username = domain_config.get(CONF_USERNAME)
+    password = domain_config.get(CONF_PASSWORD)
+    host = domain_config.get(CONF_HOST, DEFAULT_HOST)
 
     ag = AerogardenAPI(username, password, host)
     if not ag.is_valid_login():
@@ -197,11 +199,12 @@ def setup(hass, config):
 
     ag.update()
 
-    # store the Aerogarden API object into hass data system
+    # store the aerogarden API object into hass data system
     hass.data[DATA_AEROGARDEN] = ag
 
     load_platform(hass, "sensor", DOMAIN, {}, config)
     load_platform(hass, "binary_sensor", DOMAIN, {}, config)
     load_platform(hass, "light", DOMAIN, {}, config)
+    _LOGGER.debug("Done adding components.")
 
     return True
