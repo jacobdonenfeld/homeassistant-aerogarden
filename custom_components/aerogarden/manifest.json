@@ -1,0 +1,15 @@
+{
+  "domain": "aerogarden",
+  "name": "AeroGarden",
+  "documentation": "https://github.com/jacobdonenfeld/homeassistant-aerogarden",
+  "issue_tracker": "https://github.com/jacobdonenfeld/homeassistant-aerogarden/issues",
+  "dependencies": [
+    "device_tracker",
+    "entity",
+    "binary_sensor",
+    "light"
+  ],
+  "codeowners": ["@jacobdonenfeld"],
+  "requirements": [],
+  "version": "0.0.1"
+}

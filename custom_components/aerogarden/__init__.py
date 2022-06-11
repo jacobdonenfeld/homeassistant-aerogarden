@@ -24,7 +24,7 @@ DEFAULT_HOST = "https://app3.aerogarden.com:8443"
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
 CONFIG_SCHEMA = vol.Schema({
-    DOMAIN : vol.Schema({
+    DOMAIN: vol.Schema({
         vol.Required(CONF_USERNAME): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
         vol.Optional(CONF_HOST, default=DEFAULT_HOST): cv.string,
