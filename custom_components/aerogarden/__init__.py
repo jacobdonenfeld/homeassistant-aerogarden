@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import urllib
@@ -6,9 +7,12 @@ from datetime import timedelta
 import homeassistant.helpers.config_validation as cv
 import requests
 import voluptuous as vol
+from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import Throttle
 from requests import RequestException
 
@@ -16,7 +20,6 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "aerogarden"
 SENSOR_PREFIX = "aerogarden"
-DATA_AEROGARDEN = "AEROGARDEN"
 DEFAULT_HOST = "https://app3.aerogarden.com:8443"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
@@ -43,6 +46,7 @@ class AerogardenAPI:
         self._userid = None
         self._error_msg = None
         self._data = None
+        self.gardens = []
 
         self._login_url = "/api/Admin/Login"
         self._status_url = "/api/CustomData/QueryUserDevice"
@@ -81,8 +85,7 @@ class AerogardenAPI:
     def is_valid_login(self):
         if self._userid:
             return True
-
-        return
+        return False
 
     def garden_name(self, macaddr):
         multi_garden = self.garden_property(macaddr, "chooseGarden")
@@ -180,31 +183,70 @@ class AerogardenAPI:
 
         _LOGGER.debug("Updating data {}".format(data))
         self._data = data
+        self.gardens = self._data.keys()
         return True
 
 
 def setup(hass, config: dict):
     """Setup the aerogarden platform"""
+    _LOGGER.debug("Starting setup.")
+    return True
 
-    domain_config = config.get(DOMAIN)
 
-    username = domain_config.get(CONF_USERNAME)
-    password = domain_config.get(CONF_PASSWORD)
-    host = domain_config.get(CONF_HOST, DEFAULT_HOST)
+async def async_setup_entry(hass: HomeAssistant, entry: config_entries) -> bool:
+    _LOGGER.debug("Starting async setup.")
+    username = entry.data.get(CONF_USERNAME)
+    password = entry.data.get(CONF_PASSWORD)
+    host = entry.data.get(CONF_HOST, DEFAULT_HOST)
 
-    ag = AerogardenAPI(username, password, host)
+    _LOGGER.info("Initializing the Aerogarden API")
+
+    ag = await hass.async_add_executor_job(AerogardenAPI, username, password, host)
+    _LOGGER.info("Connected to Aerogarden API")
+
     if not ag.is_valid_login():
         _LOGGER.error("Invalid login: %s" % (ag.error))
         return
 
-    ag.update()
+    async def async_update_data():
+        """Fetch data from IOCare API"""
+        try:
+            ag_update_data = await hass.async_add_executor_job(ag.update())
+            return ag_update_data
+        except Exception as e:
+            raise UpdateFailed(
+                f"Error occured while fetching data from Aerogarden servers: {e}"
+            )
 
-    # store the aerogarden API object into hass data system
-    hass.data[DATA_AEROGARDEN] = ag
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name="aerogarden_coordinator",
+        update_method=async_update_data,
+        update_interval=timedelta(seconds=30),
+    )
 
-    load_platform(hass, "sensor", DOMAIN, {}, config)
-    load_platform(hass, "binary_sensor", DOMAIN, {}, config)
-    load_platform(hass, "light", DOMAIN, {}, config)
+    # store the aerogarden coordinator into hass data system
+    hass.data[DOMAIN] = coordinator
+
+    await coordinator.async_config_entry_first_refresh()
+
+    hass.async_add_job(
+        hass.config_entries.async_forward_entry_setup(
+            entry, "sensor", DOMAIN, {}, entry.data
+        )
+    )
+    hass.async_add_job(
+        hass.config_entries.async_forward_entry_setup(
+            entry, "binary_sensor", DOMAIN, {}, entry.data
+        )
+    )
+    hass.async_add_job(
+        hass.config_entries.async_forward_entry_setup(
+            entry, "light", DOMAIN, {}, entry.data
+        )
+    )
+
     _LOGGER.debug("Done adding components.")
 
     return True

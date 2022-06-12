@@ -44,7 +44,7 @@ class AerogardenBinarySensor(BinarySensorEntity):
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
 
 
-def setup_platform(hass, config, add_entities, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     ag = hass.data[aerogarden.DATA_AEROGARDEN]
 
     sensors = []
@@ -77,4 +77,4 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
                 )
             )
 
-    add_entities(sensors)
+    async_add_entities(sensors)

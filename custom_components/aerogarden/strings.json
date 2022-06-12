@@ -1,0 +1,20 @@
+{
+  "config": {
+    "title": "Aerogarden",
+    "step": {
+      "user": {
+        "title": "Fill in your Aerogarden credentials",
+        "data": {
+          "username": "Aerogarden Username",
+          "password": "Aerogarden Password"
+        }
+      }
+    },
+    "error": {
+      "auth_error": "Aerogarden authentication failed. Are your credentials correct?"
+    },
+    "abort": {
+      "already_configured": "Aerogarden is already configured"
+    }
+  }
+}

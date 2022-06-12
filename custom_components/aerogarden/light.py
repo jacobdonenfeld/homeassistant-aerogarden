@@ -48,12 +48,12 @@ class AerogardenLight(LightEntity):
         self._aerogarden.light_toggle(self._macaddr)
         self._state = 0
 
-    def update(self):
-        self._aerogarden.update()
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
+    async def async_update(self):
+        await self._aerogarden.update()
+        self._state = await self._aerogarden.garden_property(self._macaddr, self._field)
 
 
-def setup_platform(hass, config, add_devices, discovery_info=None):
+def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Setup the Aerogarden platform"""
 
     ag = hass.data[aerogarden.DATA_AEROGARDEN]
@@ -63,4 +63,4 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     for garden in ag.gardens:
         lights.append(AerogardenLight(garden, ag))
 
-    add_devices(lights)
+    async_add_devices(lights)
