@@ -56,7 +56,7 @@ class AerogardenLight(LightEntity):
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the Aerogarden platform"""
 
-    ag = hass.data[aerogarden.DATA_AEROGARDEN]
+    ag = hass.data[aerogarden.DOMAIN]
 
     lights = []
 

@@ -45,7 +45,7 @@ class AerogardenBinarySensor(BinarySensorEntity):
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    ag = hass.data[aerogarden.DATA_AEROGARDEN]
+    ag = hass.data[aerogarden.DOMAIN]
 
     sensors = []
     sensor_fields = {

@@ -15,8 +15,6 @@ from requests import RequestException
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "aerogarden"
-SENSOR_PREFIX = "aerogarden"
-DATA_AEROGARDEN = "AEROGARDEN"
 DEFAULT_HOST = "https://app3.aerogarden.com:8443"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
@@ -200,7 +198,7 @@ def setup(hass, config: dict):
     ag.update()
 
     # store the aerogarden API object into hass data system
-    hass.data[DATA_AEROGARDEN] = ag
+    hass.data[DOMAIN] = ag
 
     load_platform(hass, "sensor", DOMAIN, {}, config)
     load_platform(hass, "binary_sensor", DOMAIN, {}, config)
