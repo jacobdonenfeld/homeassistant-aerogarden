@@ -5,7 +5,6 @@
   "issue_tracker": "https://github.com/jacobdonenfeld/homeassistant-aerogarden/issues",
   "dependencies": [
     "device_tracker",
-    "entity",
     "binary_sensor",
     "light"
   ],
