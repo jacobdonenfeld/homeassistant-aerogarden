@@ -8,7 +8,7 @@ This is a custom component for [Home Assistant](http://home-assistant.io) that a
 
 
 ## Background
-This was done without help from the AeroGarden people. As far as I can tell they post no public API. I took inspiration and code from the code in this [forum post by epotex](https://community.home-assistant.io/t/first-timer-trying-to-convert-a-working-script-to-create-support-for-a-new-platform).
+This was developed without collaboration with AeroGarden, and as of publication, there is no documented public API. This implementation was forked from that of ksheumaker after it was declared unmaintained, who in turn took inspiration and code from the code in this [forum post by epotex](https://community.home-assistant.io/t/first-timer-trying-to-convert-a-working-script-to-create-support-for-a-new-platform).
 
 Currently, the code is setup to query the AeroGarden servers every 30 seconds.
 
@@ -16,11 +16,15 @@ Currently, the code is setup to query the AeroGarden servers every 30 seconds.
 
 * Harvest Wifi
 
-(I expect other models to work, since this queries their cloud service not the garden directly)
+(Other models are expected to work, since this queries AeroGarden's cloud service rather than the garden directly. Please confirm success in an issue if you use another model, so that the documentation may be updated.)
 
-## Setup
-Copy contents of the custom_compents/aerogarden/ directory into your <HA-CONFIG>/custom_components/aerogarden directory (```/config/custom_components``` on hassio)
+## Installation
 
+### HACS
+This integration is in progress of being added to the default HACS repository. Currently, add this repository as a custom repository, and then search for the "Aerogarden" integration.
+
+### Manual
+Copy `custom_components/aerogarden` into your Home Assistant `config` directory.
 Your directory structure should look like this:
 ```
    config/custom_components/aerogarden/__init__.py
@@ -28,19 +32,19 @@ Your directory structure should look like this:
    config/custom_components/aerogarden/sensor.py
    config/custom_components/aerogarden/light.py
 ```
-## Configuration
-Add the following snippet into your ```configuration.yaml```  replace [EMAIL] and [PASSWORD] with the account information you use in the AeroGarden phone app.
 
-```
-
+### Post installation steps
+- Restart HA
+- Add the following entry to `configuration.yaml`:
+```yaml
 aerogarden:
     username: [EMAIL]
     password: [PASSWORD]
-
 ```
+- Restart HA final time
 
 ## Data available
-The component supports multiple gardens and multiple sensors will be created for each garden.  [GARDEN NAME] will be replaced by whatever you named the garden in the phone app.
+The component supports multiple gardens, and multiple sensors will be created for each garden.  [GARDEN NAME] will be replaced by the garden name in the AeroGarden app.
 
 ### Light
 * light.aerogarden_[GARDEN NAME]_light
@@ -58,5 +62,8 @@ The component supports multiple gardens and multiple sensors will be created for
 ![Screen Shot](https://raw.githubusercontent.com/jacobdonenfeld/homeassistant-aerogarden/master/screen_shot.png)
 
 ## TODO
-1. Code cleanup, this is my first HA component - it probably needs some work.
-1. Turning on/off the light isn't working as smoothly as I hoped
+1. Investigate the ease of turning on/off the light. See if it can be dimmed with more control.
+2. Full integration overhaul (See aerogarden-v2 branch)
+   1. integration flow to setup
+   2. Create an aerogarden device
+   3. All calls are done async
