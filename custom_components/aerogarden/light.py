@@ -24,7 +24,7 @@ class AerogardenLight(LightEntity):
         )
 
         self._name = "%s %s %s" % (
-            aerogarden.SENSOR_PREFIX,
+            aerogarden.DOMAIN,
             self._garden_name,
             self._label,
         )
