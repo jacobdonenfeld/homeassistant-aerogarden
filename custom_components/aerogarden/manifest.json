@@ -1,6 +1,6 @@
 {
   "domain": "aerogarden",
-  "name": "AeroGarden",
+  "name": "Aerogarden",
   "documentation": "https://github.com/jacobdonenfeld/homeassistant-aerogarden",
   "issue_tracker": "https://github.com/jacobdonenfeld/homeassistant-aerogarden/issues",
   "dependencies": [
