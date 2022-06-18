@@ -8,6 +8,9 @@
     "binary_sensor",
     "light"
   ],
+  "after_dependencies": [
+    "integration"
+   ],
   "codeowners": ["@jacobdonenfeld"],
   "requirements": [],
   "version": "0.0.1",
