@@ -9,7 +9,7 @@ repos:
         -   id: detect-private-key
         -   id: fix-byte-order-marker
   -   repo: https://github.com/psf/black
-      rev: 22.3.0
+      rev: 22.10.0
       hooks:
         - id: black
           language_version: python3.9
@@ -19,13 +19,13 @@ repos:
         - id: isort
           args: [ --profile=black ]
   -   repo: https://github.com/sirosen/check-jsonschema
-      rev: 0.16.0
+      rev: 0.18.4
       hooks:
         - id: check-github-actions
         - id: check-github-workflows
 
   -   repo: https://github.com/pycqa/flake8
-      rev: 4.0.1
+      rev: 5.0.4
       hooks:
         - id: flake8
 
