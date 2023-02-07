@@ -11,7 +11,6 @@ DEPENDENCIES = ["aerogarden"]
 
 class AerogardenLight(LightEntity):
     def __init__(self, macaddr, aerogarden_api, field="lightStat", label="light"):
-
         self._aerogarden = aerogarden_api
         self._macaddr = macaddr
         self._field = field

@@ -58,7 +58,6 @@ class AerogardenAPI:
         return self._error_msg
 
     def login(self):
-
         post_data = "mail=" + self._username + "&userPwd=" + self._password
         url = self._host + self._login_url
 
@@ -90,7 +89,6 @@ class AerogardenAPI:
         return self.garden_property(macaddr, "plantedName") + "_" + multi_garden_label
 
     def garden_property(self, macaddr, field):
-
         if macaddr not in self._data:
             return None
 
