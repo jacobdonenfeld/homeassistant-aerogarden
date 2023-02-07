@@ -68,7 +68,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     }
 
     for garden in ag.gardens:
-
         for field in sensor_fields.keys():
             s = sensor_fields[field]
             sensors.append(
