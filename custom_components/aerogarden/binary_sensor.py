@@ -27,6 +27,8 @@ class AerogardenBinarySensor(BinarySensorEntity):
         )
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
 
+        _LOGGER.debug("Initialized binary sensor %s:\n%s", field, vars(self))
+
     @property
     def name(self):
         return self._name
