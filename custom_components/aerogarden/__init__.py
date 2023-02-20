@@ -1,5 +1,6 @@
 import base64
 import logging
+import re
 import urllib
 from datetime import timedelta
 
@@ -33,6 +34,44 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
+class RedactingFormatter(object):
+    def __init__(self, orig_formatter, patterns):
+        self.orig_formatter = orig_formatter
+        self._patterns = patterns
+
+    def format(self, record):
+        msg = self.orig_formatter.format(record)
+        for pattern in self._patterns:
+            msg = msg.replace(pattern, "<PASSWD>")
+        return msg
+
+    def __getattr__(self, attr):
+        return getattr(self.orig_formatter, attr)
+
+
+def postAndHandle(url, post_data, headers):
+    try:
+        r = requests.post(url, json=post_data, headers=headers)
+    except RequestException as ex:
+        _LOGGER.exception("Error communicating with aerogarden servers:\n %s", str(ex))
+        return False
+
+    try:
+        response = r.json()
+    except ValueError as ex:
+        if post_data["&userPwd"]:
+            del post_data["&userPwd"]
+        _LOGGER.exception(
+            "error: Could not marshall post request to json.\n post:\n%s\n\nexception:\n%s",
+            str(r),
+            post_data,
+            ex,
+        )
+        return False
+    _LOGGER.debug(response)
+    return response
+
+
 class AerogardenAPI:
     def __init__(self, username, password, host=None):
         self._username = urllib.parse.quote(username)
@@ -58,27 +97,28 @@ class AerogardenAPI:
         return self._error_msg
 
     def login(self):
-        post_data = "mail=" + self._username + "&userPwd=" + self._password
+        post_data = {
+            "mail": self._username,
+            "&userPwd": self._password,
+        }
         url = self._host + self._login_url
 
-        try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
+        response = postAndHandle(url, post_data, self._headers)
+        if not response:
             return False
-
-        response = r.json()
 
         userid = response["code"]
         if userid > 0:
             self._userid = str(userid)
         else:
-            self._error_msg = "Login api call returned %s" % (response["code"])
+            error_msg = "Login api call returned %s" % (response["code"])
+            self._error_msg = error_msg
+            _LOGGER.exception(error_msg)
 
     def is_valid_login(self):
         if self._userid:
             return True
-
+        _LOGGER.debug("Could not find valid login")
         return
 
     def garden_name(self, macaddr):
@@ -103,6 +143,10 @@ class AerogardenAPI:
         I couldn't find any way to set a specific state, it just cycles between the three.
         """
         if macaddr not in self._data:
+            _LOGGER.debug(
+                "light_toggle called for macaddr %s, on struct %s, but struct doesn't have addr",
+                vars(self),
+            )
             return None
 
         post_data = {
@@ -116,13 +160,9 @@ class AerogardenAPI:
         url = self._host + self._update_url
         _LOGGER.debug(f"Sending POST data to toggle light: {post_data}")
 
-        try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
+        results = postAndHandle(url, post_data, self._headers)
+        if not results:
             return False
-
-        results = r.json()
 
         if "code" in results:
             if results["code"] == 1:
@@ -148,18 +188,16 @@ class AerogardenAPI:
         url = self._host + self._status_url
         post_data = "userID=" + self._userid
 
-        try:
-            r = requests.post(url, data=post_data, headers=self._headers)
-        except RequestException:
-            _LOGGER.exception("Error communicating with aerogarden servers")
+        garden_data = postAndHandle(url, post_data, self._headers)
+        if not garden_data:
             return False
 
-        garden_data = r.json()
-
         if "Message" in garden_data:
-            self._error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (
+            error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (
                 garden_data["Message"]
             )
+            self._error_msg = error_msg
+            _LOGGER.exception(error_msg)
             return False
 
         for garden in garden_data:
@@ -188,11 +226,15 @@ def setup(hass, config: dict):
 
     username = domain_config.get(CONF_USERNAME)
     password = domain_config.get(CONF_PASSWORD)
+    # Filter out password from logging
+    logging.Handler.setFormatter(
+        RedactingFormatter(logging.Formatter, patterns=[password])
+    )
     host = domain_config.get(CONF_HOST, DEFAULT_HOST)
 
     ag = AerogardenAPI(username, password, host)
     if not ag.is_valid_login():
-        _LOGGER.error("Invalid login: %s" % (ag.error))
+        _LOGGER.error("Invalid login: %s" % ag.error)
         return
 
     ag.update()

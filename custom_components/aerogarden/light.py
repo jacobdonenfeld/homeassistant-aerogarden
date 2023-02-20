@@ -29,6 +29,8 @@ class AerogardenLight(LightEntity):
         )
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
 
+        _LOGGER.debug("Initialized garden lightStat:\n%s", vars(self))
+
     @property
     def name(self):
         return self._name
