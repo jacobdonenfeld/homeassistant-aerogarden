@@ -34,21 +34,6 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
-class RedactingFormatter(object):
-    def __init__(self, orig_formatter, patterns):
-        self.orig_formatter = orig_formatter
-        self._patterns = patterns
-
-    def format(self, record):
-        msg = self.orig_formatter.format(record)
-        for pattern in self._patterns:
-            msg = msg.replace(pattern, "<PASSWD>")
-        return msg
-
-    def __getattr__(self, attr):
-        return getattr(self.orig_formatter, attr)
-
-
 def postAndHandle(url, post_data, headers):
     try:
         r = requests.post(url, json=post_data, headers=headers)
@@ -60,6 +45,7 @@ def postAndHandle(url, post_data, headers):
         response = r.json()
     except ValueError as ex:
         if post_data["&userPwd"]:
+            # Remove password before printing
             del post_data["&userPwd"]
         _LOGGER.exception(
             "error: Could not marshall post request to json.\n post:\n%s\n\nexception:\n%s",
@@ -226,10 +212,7 @@ def setup(hass, config: dict):
 
     username = domain_config.get(CONF_USERNAME)
     password = domain_config.get(CONF_PASSWORD)
-    # Filter out password from logging
-    logging.Handler.setFormatter(
-        RedactingFormatter(logging.Formatter, patterns=[password])
-    )
+
     host = domain_config.get(CONF_HOST, DEFAULT_HOST)
 
     ag = AerogardenAPI(username, password, host)
