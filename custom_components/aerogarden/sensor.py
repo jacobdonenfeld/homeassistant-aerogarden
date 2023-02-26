@@ -28,6 +28,8 @@ class AerogardenSensor(Entity):
             self._garden_name,
             self._label,
         )
+        self._attr_unique_id = self._macaddr + self._label
+
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
 
         _LOGGER.debug("Initialized garden sensor %s:\n%s", field, vars(self))

@@ -15,6 +15,7 @@ class AerogardenBinarySensor(BinarySensorEntity):
         self._macaddr = macaddr
         self._field = field
         self._label = label
+
         if not label:
             self._label = field
         self._icon = icon
@@ -25,6 +26,8 @@ class AerogardenBinarySensor(BinarySensorEntity):
             self._garden_name,
             self._label,
         )
+        self._attr_unique_id = self._macaddr + self._label
+
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
 
         _LOGGER.debug("Initialized binary sensor %s:\n%s", field, vars(self))
