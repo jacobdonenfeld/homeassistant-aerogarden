@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import re
 import urllib
@@ -9,7 +10,6 @@ import requests
 import voluptuous as vol
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.helpers.discovery import load_platform
-from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 from requests import RequestException
 
@@ -34,9 +34,24 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
+# cleanPassword assumes there is one or zero instances of password in the text
+# replaces the password with <password>
+def cleanPassword(text, password):
+    passwordLen = len(password)
+    if passwordLen == 0:
+        return text
+    replaceText = "<password>"
+    for i in range(len(text) + 1 - passwordLen):
+        if text[i : (i + passwordLen)] == password:
+            restOfString = text[(i + passwordLen) :]
+            text = text[:i] + replaceText + restOfString
+            break
+    return text
+
+
 def postAndHandle(url, post_data, headers):
     try:
-        r = requests.post(url, json=post_data, headers=headers)
+        r = requests.post(url, data=post_data, headers=headers)
     except RequestException as ex:
         _LOGGER.exception("Error communicating with aerogarden servers:\n %s", str(ex))
         return False
@@ -44,17 +59,13 @@ def postAndHandle(url, post_data, headers):
     try:
         response = r.json()
     except ValueError as ex:
-        if post_data["&userPwd"]:
-            # Remove password before printing
-            del post_data["&userPwd"]
+        # Remove password before printing
         _LOGGER.exception(
-            "error: Could not marshall post request to json.\n post:\n%s\n\nexception:\n%s",
+            "error: Could not marshall post request to json.\nexception:\n%s",
             str(r),
-            post_data,
             ex,
         )
         return False
-    _LOGGER.debug(response)
     return response
 
 
@@ -83,14 +94,17 @@ class AerogardenAPI:
         return self._error_msg
 
     def login(self):
-        post_data = {
-            "mail": self._username,
-            "&userPwd": self._password,
-        }
+        post_data = "mail=" + self._username + "&userPwd=" + self._password
         url = self._host + self._login_url
 
         response = postAndHandle(url, post_data, self._headers)
+        _LOGGER.debug(
+            "Login URL: %s, post data: %s, headers: %s "
+            % (url, cleanPassword(str(post_data), self._password), self._headers)
+        )
+
         if not response:
+            _LOGGER.exception("Issue logging into aerogarden servers.")
             return False
 
         userid = response["code"]
@@ -99,6 +113,7 @@ class AerogardenAPI:
         else:
             error_msg = "Login api call returned %s" % (response["code"])
             self._error_msg = error_msg
+
             _LOGGER.exception(error_msg)
 
     def is_valid_login(self):
@@ -135,14 +150,16 @@ class AerogardenAPI:
             )
             return None
 
-        post_data = {
-            "airGuid": macaddr,
-            "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
-            "userID": self._userid,
-            "plantConfig": '{ "lightTemp" : %d }'
-            % (self.garden_property(macaddr, "lightTemp"))
-            # TODO: Light Temp may not matter, check.
-        }
+        post_data = json.dumps(
+            {
+                "airGuid": macaddr,
+                "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
+                "userID": self._userid,
+                "plantConfig": '{ "lightTemp" : %d }'
+                % (self.garden_property(macaddr, "lightTemp"))
+                # TODO: Light Temp may not matter, check.
+            }
+        )
         url = self._host + self._update_url
         _LOGGER.debug(f"Sending POST data to toggle light: {post_data}")
 
