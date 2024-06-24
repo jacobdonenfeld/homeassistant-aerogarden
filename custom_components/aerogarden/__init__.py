@@ -3,10 +3,11 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME, Platfor
 from homeassistant.core import HomeAssistant
 
 from .api import AerogardenAPI
+from .const import DEFAULT_HOST, DOMAIN
 from .coordinator import AerogardenDataUpdateCoordinator
-from .const import DOMAIN, DEFAULT_HOST
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.LIGHT]
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Aerogarden from a config entry."""
@@ -25,6 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     return True
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""

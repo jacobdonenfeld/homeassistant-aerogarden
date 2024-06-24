@@ -8,14 +8,15 @@ import async_timeout
 
 from .const import (
     DEFAULT_HOST,
+    ERROR_AUTH,
+    ERROR_CONNECTION,
     LOGIN_URL,
     STATUS_URL,
     UPDATE_URL,
-    ERROR_AUTH,
-    ERROR_CONNECTION,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class AerogardenAPI:
     """API class for interacting with Aerogarden."""
@@ -40,7 +41,9 @@ class AerogardenAPI:
 
         try:
             async with async_timeout.timeout(10):
-                async with self._session.post(url, data=post_data, headers=self._headers) as response:
+                async with self._session.post(
+                    url, data=post_data, headers=self._headers
+                ) as response:
                     response.raise_for_status()
                     data = await response.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
@@ -65,7 +68,9 @@ class AerogardenAPI:
 
         try:
             async with async_timeout.timeout(10):
-                async with self._session.post(url, data=post_data, headers=self._headers) as response:
+                async with self._session.post(
+                    url, data=post_data, headers=self._headers
+                ) as response:
                     response.raise_for_status()
                     garden_data = await response.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
@@ -80,10 +85,14 @@ class AerogardenAPI:
         new_data = {}
         for garden in garden_data:
             if "plantedName" in garden:
-                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode("utf-8")
+                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
+                    "utf-8"
+                )
 
             garden_id = garden.get("configID")
-            garden_mac = f"{garden['airGuid']}{'-' + str(garden_id) if garden_id else ''}"
+            garden_mac = (
+                f"{garden['airGuid']}{'-' + str(garden_id) if garden_id else ''}"
+            )
             new_data[garden_mac] = garden
 
         self._data = new_data
@@ -95,17 +104,23 @@ class AerogardenAPI:
             _LOGGER.error("light_toggle called for unknown macaddr: %s", macaddr)
             return False
 
-        post_data = json.dumps({
-            "airGuid": macaddr,
-            "chooseGarden": self._data[macaddr].get("chooseGarden"),
-            "userID": self._userid,
-            "plantConfig": json.dumps({"lightTemp": self._data[macaddr].get("lightTemp")})
-        })
+        post_data = json.dumps(
+            {
+                "airGuid": macaddr,
+                "chooseGarden": self._data[macaddr].get("chooseGarden"),
+                "userID": self._userid,
+                "plantConfig": json.dumps(
+                    {"lightTemp": self._data[macaddr].get("lightTemp")}
+                ),
+            }
+        )
         url = f"{self._host}{UPDATE_URL}"
 
         try:
             async with async_timeout.timeout(10):
-                async with self._session.post(url, data=post_data, headers=self._headers) as response:
+                async with self._session.post(
+                    url, data=post_data, headers=self._headers
+                ) as response:
                     response.raise_for_status()
                     data = await response.json()
         except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
@@ -116,7 +131,7 @@ class AerogardenAPI:
             await self.fetch_data()  # Update data after successful toggle
             return True
 
-        _LOGGER.error("Failed to toggle light: %s", data.get('msg', 'Unknown error'))
+        _LOGGER.error("Failed to toggle light: %s", data.get("msg", "Unknown error"))
         return False
 
     async def close(self):

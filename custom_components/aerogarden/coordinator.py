@@ -1,5 +1,5 @@
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -8,6 +8,7 @@ from .api import AerogardenAPI
 from .const import DOMAIN, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class AerogardenDataUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage fetching Aerogarden data."""

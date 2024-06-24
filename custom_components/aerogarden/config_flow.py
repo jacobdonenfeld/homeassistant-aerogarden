@@ -1,9 +1,10 @@
+import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
-import voluptuous as vol
 
-from .const import DOMAIN, CONF_API_KEY
+from .const import CONF_API_KEY, DOMAIN
+
 
 class AeroGardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -17,7 +18,7 @@ class AeroGardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 # Validate the API key by attempting to connect
                 await self.validate_api_key(user_input[CONF_API_KEY])
-                
+
                 # If validation is successful, create the config entry
                 return self.async_create_entry(
                     title="AeroGarden",
