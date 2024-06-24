@@ -1,6 +1,7 @@
 import logging
 
 from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.helpers.entity import DeviceInfo
 
 from .. import aerogarden
 
@@ -47,6 +48,18 @@ class AerogardenBinarySensor(BinarySensorEntity):
     def update(self):
         self._aerogarden.update()
         self._state = self._aerogarden.garden_property(self._macaddr, self._field)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                # Serial numbers are unique identifiers within a specific domain
+                self._macaddr
+            },
+            name=self._garden_name,
+            model=self._aerogarden.garden_property,
+        )
 
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
