@@ -1,9 +1,11 @@
 {
   "domain": "aerogarden",
   "name": "Aerogarden",
+  "config_flow": true,
   "after_dependencies": [
     "integration"
   ],
+  "homekit": {},
   "codeowners": [
     "@jacobdonenfeld"
   ],
