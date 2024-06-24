@@ -156,7 +156,7 @@ class AerogardenAPI:
                 "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
                 "userID": self._userid,
                 "plantConfig": '{ "lightTemp" : %d }'
-                % (self.garden_property(macaddr, "lightTemp"))
+                % (self.garden_property(macaddr, "lightTemp")),
                 # TODO: Light Temp may not matter, check.
             }
         )
