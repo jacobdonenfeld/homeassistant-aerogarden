@@ -1,6 +1,6 @@
 import pytest
 
-from custom_components.aerogarden import cleanPassword
+from custom_components.aerogarden.api import cleanPassword
 
 
 def test_clean_password() -> None:
