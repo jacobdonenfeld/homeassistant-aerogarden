@@ -1,7 +1,8 @@
+import asyncio
 import base64
 import json
 import logging
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import aiohttp
 import async_timeout
@@ -12,6 +13,7 @@ from homeassistant.util import Throttle
 from .const import MIN_TIME_BETWEEN_UPDATES
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class AerogardenAPI:
     def __init__(self, hass: HomeAssistant, username: str, password: str, host: str):
@@ -71,12 +73,14 @@ class AerogardenAPI:
             _LOGGER.debug(f"light_toggle called for unknown macaddr: {macaddr}")
             return False
 
-        post_data = json.dumps({
-            "airGuid": macaddr,
-            "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
-            "userID": self._userid,
-            "plantConfig": f'{{ "lightTemp" : {self.garden_property(macaddr, "lightTemp")} }}'
-        })
+        post_data = json.dumps(
+            {
+                "airGuid": macaddr,
+                "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
+                "userID": self._userid,
+                "plantConfig": f'{{ "lightTemp" : {self.garden_property(macaddr, "lightTemp")} }}',
+            }
+        )
 
         results = await self._post_request(self._update_url, post_data)
         if not results:
@@ -86,7 +90,9 @@ class AerogardenAPI:
             await self.update(no_throttle=True)
             return True
 
-        self._error_msg = f"Didn't get code 1 from update API call: {results.get('msg')}"
+        self._error_msg = (
+            f"Didn't get code 1 from update API call: {results.get('msg')}"
+        )
         return False
 
     @property
@@ -113,10 +119,14 @@ class AerogardenAPI:
         new_data = {}
         for garden in garden_data:
             if "plantedName" in garden:
-                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode("utf-8")
+                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
+                    "utf-8"
+                )
 
             garden_id = garden.get("configID")
-            garden_mac = f"{garden['airGuid']}-{'' if garden_id is None else str(garden_id)}"
+            garden_mac = (
+                f"{garden['airGuid']}-{'' if garden_id is None else str(garden_id)}"
+            )
             new_data[garden_mac] = garden
 
         self._data = new_data
@@ -126,9 +136,13 @@ class AerogardenAPI:
         session = async_get_clientsession(self._hass)
         try:
             async with async_timeout.timeout(10):
-                async with session.post(url, data=post_data, headers=self._headers) as response:
+                async with session.post(
+                    url, data=post_data, headers=self._headers
+                ) as response:
                     if response.status != 200:
-                        _LOGGER.error(f"HTTP error {response.status} while requesting {url}")
+                        _LOGGER.error(
+                            f"HTTP error {response.status} while requesting {url}"
+                        )
                         return None
                     return await response.json()
         except aiohttp.ClientError as err:

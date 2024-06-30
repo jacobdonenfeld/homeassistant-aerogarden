@@ -4,10 +4,10 @@
   "after_dependencies": [
     "integration"
   ],
-  "config_flow": true,
   "codeowners": [
     "@jacobdonenfeld"
   ],
+  "config_flow": true,
   "dependencies": [
     "device_tracker",
     "binary_sensor",

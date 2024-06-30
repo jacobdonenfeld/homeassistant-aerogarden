@@ -1,11 +1,8 @@
 import logging
 
-import homeassistant.helpers.config_validation as cv
-import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.discovery import load_platform
 
 from .api import AerogardenAPI
 from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_HOST, DOMAIN
