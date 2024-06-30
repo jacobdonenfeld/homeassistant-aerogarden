@@ -16,7 +16,7 @@ from requests import RequestException
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "aerogarden"
-DEFAULT_HOST = "https://app3.aerogarden.com:8443"
+DEFAULT_HOST = "https://app4.aerogarden.com"
 
 MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 
