@@ -87,7 +87,7 @@ class AerogardenAPI:
             return False
 
         if results.get("code") == 1:
-            await self.update(no_throttle=True)
+            await self.update()
             return True
 
         self._error_msg = (
@@ -99,7 +99,6 @@ class AerogardenAPI:
     def gardens(self):
         return list(self._data.keys())
 
-    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def update(self) -> bool:
         if not self.is_valid_login():
             if not await self.login():
@@ -131,6 +130,11 @@ class AerogardenAPI:
 
         self._data = new_data
         return True
+
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
+    async def throttled_update(self) -> bool:
+        # Call the update method
+        return await self.update()
 
     async def _post_request(self, url: str, post_data: str) -> Optional[Dict[str, Any]]:
         session = async_get_clientsession(self._hass)

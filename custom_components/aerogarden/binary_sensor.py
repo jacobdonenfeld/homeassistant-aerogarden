@@ -85,4 +85,4 @@ class AerogardenBinarySensor(BinarySensorEntity):
 
     async def async_update(self) -> None:
         """Fetch new state data for the binary sensor."""
-        await self._aerogarden.update()
+        await self._aerogarden.throttled_update()

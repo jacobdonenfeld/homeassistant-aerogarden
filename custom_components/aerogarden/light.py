@@ -58,7 +58,7 @@ class AerogardenLight(LightEntity):
 
     async def async_update(self) -> None:
         """Fetch new state data for the light."""
-        await self._aerogarden.update()
+        await self._aerogarden.throttled_update()
         self._attr_is_on = (
             self._aerogarden.garden_property(self._macaddr, self._field) == 1
         )
