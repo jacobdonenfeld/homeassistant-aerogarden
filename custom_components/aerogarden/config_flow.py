@@ -12,35 +12,31 @@ from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_HOST, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-CONFIG_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_USERNAME): str,
-        vol.Required(CONF_PASSWORD): str,
-    }
-)
-
+CONFIG_SCHEMA = vol.Schema({
+    vol.Required(CONF_USERNAME): str,
+    vol.Required(CONF_PASSWORD): str,
+})
 
 class AerogardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    async def async_step_user(
-        self, user_input: Optional[Dict[str, Any]] = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None) -> FlowResult:
         errors = {}
         if user_input is not None:
             username = user_input[CONF_USERNAME]
             password = user_input[CONF_PASSWORD]
 
-            ag = AerogardenAPI(username, password, DEFAULT_HOST)
+            ag = AerogardenAPI(self.hass, username, password, DEFAULT_HOST)
             try:
-                is_valid = await self.hass.async_add_executor_job(ag.is_valid_login)
+                is_valid = await ag.login()
                 if is_valid:
                     # Check if this username is already configured
                     await self.async_set_unique_id(username)
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(
-                        title=f"Aerogarden ({username})", data=user_input
+                        title=f"Aerogarden ({username})",
+                        data=user_input
                     )
                 else:
                     errors["base"] = "invalid_auth"
@@ -54,42 +50,32 @@ class AerogardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-
-async def async_setup_entry(
-    hass: HomeAssistant, entry: config_entries.ConfigEntry
-) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Set up Aerogarden from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
 
-    ag = AerogardenAPI(username, password, DEFAULT_HOST)
+    ag = AerogardenAPI(hass, username, password, DEFAULT_HOST)
 
     try:
-        is_valid = await hass.async_add_executor_job(ag.is_valid_login)
+        is_valid = await ag.login()
         if not is_valid:
             raise ConfigEntryNotReady("Invalid login credentials")
 
-        await hass.async_add_executor_job(ag.update)
+        await ag.update()
     except Exception as e:
         _LOGGER.error("Error setting up Aerogarden integration: %s", str(e))
         raise ConfigEntryNotReady from e
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = ag
 
-    await hass.config_entries.async_forward_entry_setups(
-        entry, ["sensor", "binary_sensor", "light"]
-    )
+    await hass.config_entries.async_forward_entry_setups(entry, ["sensor", "binary_sensor", "light"])
 
     return True
 
-
-async def async_unload_entry(
-    hass: HomeAssistant, entry: config_entries.ConfigEntry
-) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: config_entries.ConfigEntry) -> bool:
     """Unload a config entry."""
-    unload_ok = await hass.config_entries.async_unload_platforms(
-        entry, ["sensor", "binary_sensor", "light"]
-    )
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, ["sensor", "binary_sensor", "light"])
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
 

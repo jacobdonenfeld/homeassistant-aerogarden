@@ -1,205 +1,140 @@
 import base64
 import json
 import logging
-import re
-import urllib
-from datetime import timedelta
+from typing import Dict, Any, Optional
 
-import homeassistant.helpers.config_validation as cv
-import requests
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.discovery import load_platform
+import aiohttp
+import async_timeout
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.util import Throttle
-from requests import RequestException
 
 from .const import MIN_TIME_BETWEEN_UPDATES
 
 _LOGGER = logging.getLogger(__name__)
 
-
-# cleanPassword assumes there is one or zero instances of password in the text
-# replaces the password with <password>
-def cleanPassword(text, password):
-    passwordLen = len(password)
-    if passwordLen == 0:
-        return text
-    replaceText = "<password>"
-    for i in range(len(text) + 1 - passwordLen):
-        if text[i : (i + passwordLen)] == password:
-            restOfString = text[(i + passwordLen) :]
-            text = text[:i] + replaceText + restOfString
-            break
-    return text
-
-
 class AerogardenAPI:
-    def __init__(self, username, password, host=None):
-        self._username = urllib.parse.quote(username)
-        self._password = urllib.parse.quote(password)
+    def __init__(self, hass: HomeAssistant, username: str, password: str, host: str):
+        self._hass = hass
+        self._username = username
+        self._password = password
         self._host = host
-        self._userid = None
-        self._error_msg = None
-        self._data = None
+        self._userid: Optional[str] = None
+        self._error_msg: Optional[str] = None
+        self._data: Dict[str, Any] = {}
 
-        self._login_url = "/api/Admin/Login"
-        self._status_url = "/api/CustomData/QueryUserDevice"
-        self._update_url = "/api/Custom/UpdateDeviceConfig"
+        self._login_url = f"{self._host}/api/Admin/Login"
+        self._status_url = f"{self._host}/api/CustomData/QueryUserDevice"
+        self._update_url = f"{self._host}/api/Custom/UpdateDeviceConfig"
 
         self._headers = {
             "User-Agent": "HA-Aerogarden/0.1",
             "Content-Type": "application/x-www-form-urlencoded",
         }
 
-        self.login()
-
     @property
-    def error(self):
+    def error(self) -> Optional[str]:
         return self._error_msg
 
-    def login(self):
-        post_data = "mail=" + self._username + "&userPwd=" + self._password
-        url = self._host + self._login_url
-
-        response = postAndHandle(url, post_data, self._headers)
-        _LOGGER.debug(
-            "Login URL: %s, post data: %s, headers: %s "
-            % (url, cleanPassword(str(post_data), self._password), self._headers)
-        )
+    async def login(self) -> bool:
+        post_data = f"mail={self._username}&userPwd={self._password}"
+        response = await self._post_request(self._login_url, post_data)
 
         if not response:
-            _LOGGER.exception("Issue logging into aerogarden servers.")
+            _LOGGER.error("Issue logging into Aerogarden servers.")
             return False
 
-        userid = response["code"]
-        if userid > 0:
+        userid = response.get("code")
+        if userid and userid > 0:
             self._userid = str(userid)
-        else:
-            error_msg = "Login api call returned %s" % (response["code"])
-            self._error_msg = error_msg
-
-            _LOGGER.exception(error_msg)
-
-    def is_valid_login(self):
-        if self._userid:
             return True
-        _LOGGER.debug("Could not find valid login")
-        return
+        else:
+            self._error_msg = f"Login API call returned {response.get('code')}"
+            _LOGGER.error(self._error_msg)
+            return False
 
-    def garden_name(self, macaddr):
+    def is_valid_login(self) -> bool:
+        return self._userid is not None
+
+    def garden_name(self, macaddr: str) -> Optional[str]:
         multi_garden = self.garden_property(macaddr, "chooseGarden")
-        if not multi_garden:
+        if multi_garden is None:
             return self.garden_property(macaddr, "plantedName")
         multi_garden_label = "left" if multi_garden == 0 else "right"
-        return self.garden_property(macaddr, "plantedName") + "_" + multi_garden_label
+        return f"{self.garden_property(macaddr, 'plantedName')}_{multi_garden_label}"
 
-    def garden_property(self, macaddr, field):
+    def garden_property(self, macaddr: str, field: str) -> Any:
+        return self._data.get(macaddr, {}).get(field)
+
+    async def light_toggle(self, macaddr: str) -> bool:
         if macaddr not in self._data:
-            return None
+            _LOGGER.debug(f"light_toggle called for unknown macaddr: {macaddr}")
+            return False
 
-        if field not in self._data[macaddr]:
-            return None
+        post_data = json.dumps({
+            "airGuid": macaddr,
+            "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
+            "userID": self._userid,
+            "plantConfig": f'{{ "lightTemp" : {self.garden_property(macaddr, "lightTemp")} }}'
+        })
 
-        return self._data[macaddr].get(field, None)
-
-    def light_toggle(self, macaddr):
-        """light_toggle:
-        Toggles between Bright, Dimmed, and Off.
-        I couldn't find any way to set a specific state, it just cycles between the three.
-        """
-        if macaddr not in self._data:
-            _LOGGER.debug(
-                "light_toggle called for macaddr %s, on struct %s, but struct doesn't have addr",
-                vars(self),
-            )
-            return None
-
-        post_data = json.dumps(
-            {
-                "airGuid": macaddr,
-                "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
-                "userID": self._userid,
-                "plantConfig": '{ "lightTemp" : %d }'
-                % (self.garden_property(macaddr, "lightTemp")),
-                # TODO: Light Temp may not matter, check.
-            }
-        )
-        url = self._host + self._update_url
-        _LOGGER.debug(f"Sending POST data to toggle light: {post_data}")
-
-        results = postAndHandle(url, post_data, self._headers)
+        results = await self._post_request(self._update_url, post_data)
         if not results:
             return False
 
-        if "code" in results:
-            if results["code"] == 1:
-                return True
+        if results.get("code") == 1:
+            await self.update(no_throttle=True)
+            return True
 
-        self._error_msg = "Didn't get code 1 from update API call: %s" % (
-            results["msg"]
-        )
-        self.update(no_throttle=True)
-
+        self._error_msg = f"Didn't get code 1 from update API call: {results.get('msg')}"
         return False
 
     @property
     def gardens(self):
-        return self._data.keys()
+        return list(self._data.keys())
 
     @Throttle(MIN_TIME_BETWEEN_UPDATES)
-    def update(self):
-        data = {}
+    async def update(self) -> bool:
         if not self.is_valid_login():
-            return
+            if not await self.login():
+                return False
 
-        url = self._host + self._status_url
-        post_data = "userID=" + self._userid
+        post_data = f"userID={self._userid}"
+        garden_data = await self._post_request(self._status_url, post_data)
 
-        garden_data = postAndHandle(url, post_data, self._headers)
         if not garden_data:
             return False
 
         if "Message" in garden_data:
-            error_msg = "Couldn't get data for garden (correct macaddr?): %s" % (
-                garden_data["Message"]
-            )
-            self._error_msg = error_msg
-            _LOGGER.exception(error_msg)
+            self._error_msg = f"Couldn't get data for garden: {garden_data['Message']}"
+            _LOGGER.error(self._error_msg)
             return False
 
+        new_data = {}
         for garden in garden_data:
             if "plantedName" in garden:
-                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
-                    "utf-8"
-                )
+                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode("utf-8")
 
-            # Seems to be for multigarden config, untested, adapted from
-            # https://github.com/JeremyKennedy/homeassistant-aerogarden/commit/5854477c35103d724b86490b90e286b5d74f6660
-            garden_id = garden.get("configID", None)
-            garden_mac = (
-                garden["airGuid"] + "-" + ("" if garden_id is None else str(garden_id))
-            )
-            data[garden_mac] = garden
+            garden_id = garden.get("configID")
+            garden_mac = f"{garden['airGuid']}-{'' if garden_id is None else str(garden_id)}"
+            new_data[garden_mac] = garden
 
-        _LOGGER.debug("Updating data {}".format(data))
-        self._data = data
+        self._data = new_data
         return True
 
-
-def postAndHandle(url, post_data, headers):
-    try:
-        r = requests.post(url, data=post_data, headers=headers)
-    except RequestException as ex:
-        _LOGGER.exception("Error communicating with aerogarden servers:\n %s", str(ex))
-        return False
-
-    try:
-        response = r.json()
-    except ValueError as ex:
-        # Remove password before printing
-        _LOGGER.exception(
-            "error: Could not marshall post request to json.\nexception:\n%s",
-            str(r),
-            ex,
-        )
-        return False
-    return response
+    async def _post_request(self, url: str, post_data: str) -> Optional[Dict[str, Any]]:
+        session = async_get_clientsession(self._hass)
+        try:
+            async with async_timeout.timeout(10):
+                async with session.post(url, data=post_data, headers=self._headers) as response:
+                    if response.status != 200:
+                        _LOGGER.error(f"HTTP error {response.status} while requesting {url}")
+                        return None
+                    return await response.json()
+        except aiohttp.ClientError as err:
+            _LOGGER.error(f"Error requesting data from {url}: {err}")
+        except json.JSONDecodeError:
+            _LOGGER.error(f"Error decoding response from {url}")
+        except asyncio.TimeoutError:
+            _LOGGER.error(f"Timeout while requesting data from {url}")
+        return None
