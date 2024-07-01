@@ -1,12 +1,12 @@
 import logging
 from typing import Any, Dict, Optional
 
-import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import ConfigEntryNotReady
+import voluptuous as vol
 
 from .api import AerogardenAPI
 from .const import DEFAULT_HOST, DOMAIN

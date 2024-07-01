@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from unittest.mock import MagicMock, patch
 
-import pytest
 from homeassistant import config_entries, data_entry_flow
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+import pytest
 
 from custom_components.aerogarden.const import DOMAIN
 

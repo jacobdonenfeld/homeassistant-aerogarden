@@ -3,6 +3,7 @@ name: validate
 on:
   push:
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: "0 0 * * *"
 
@@ -12,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@@v3
       - name: validation
         uses: home-assistant/actions/hassfest@master
 
