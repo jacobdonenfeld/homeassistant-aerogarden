@@ -20,12 +20,16 @@ repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v4.6.0
       hooks:
-        -   id: check-yaml
+        #-  id: check-yaml # disabled atm due to https://github.com/pre-commit/pre-commit-hooks/issues/577
         -   id: check-json
         -   id: end-of-file-fixer
+        -   id: check-case-conflict
         -   id: trailing-whitespace
         -   id: detect-private-key
         -   id: fix-byte-order-marker
+        -   id: mixed-line-ending
+            args: ["--fix=lf"]
+
   -   repo: https://github.com/psf/black
       rev: 24.4.2
       hooks:
