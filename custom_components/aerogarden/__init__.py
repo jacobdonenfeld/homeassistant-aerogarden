@@ -30,6 +30,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     }
 
     ag = AerogardenAPI(hass, email, password, DEFAULT_HOST)
+    await ag.login()
     if not ag.is_valid_login():
         _LOGGER.error("Invalid login: %s" % ag.error)
         return False
