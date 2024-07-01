@@ -1,5 +1,7 @@
 # homeassistant-aerogarden
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg?style=for-the-badge)](https://github.com/custom-components/hacs)
+
+
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/jacobdonenfeld/homeassistant-aerogarden/master.svg)](https://results.pre-commit.ci/latest/github/jacobdonenfeld/homeassistant-aerogarden/master)
 [![codecov](https://codecov.io/github/jacobdonenfeld/homeassistant-aerogarden/branch/master/graph/badge.svg?token=WTX0LQ6JGE)](https://codecov.io/github/jacobdonenfeld/homeassistant-aerogarden)
@@ -22,19 +24,23 @@ Currently, the code is setup to query the AeroGarden servers every 30 seconds.
 ## Installation
 
 ### HACS
-This integration is in progress of being added to the default HACS repository. Currently, add this repository as a custom repository, and then search for the "Aerogarden" integration.
+This integration is a default HACS integration. Simply by searching aerogarden in HACS integrations should allow one to find and install.
 
-### Manual
+### Manual (Testing custom changes)
 Copy `custom_components/aerogarden` into your Home Assistant `config` directory.
 Your directory structure should look like this:
 ```
    config/custom_components/aerogarden/__init__.py
+   config/custom_components/aerogarden/api.py
    config/custom_components/aerogarden/binary_sensor.py
    config/custom_components/aerogarden/sensor.py
    config/custom_components/aerogarden/light.py
 ```
 
 ### Post installation steps
+
+Note: Beta release has an automatic setup flow in process.
+
 - Restart HA
 - Add the following entry to `configuration.yaml`:
 ```yaml
