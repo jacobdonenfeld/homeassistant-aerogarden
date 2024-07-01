@@ -6,4 +6,9 @@ coverage
 homeassistant
 requests
 voluptuous
+async_timeout
+pytest-asyncio
+codespell
+aioresponses
+pytest-mock
 datetime

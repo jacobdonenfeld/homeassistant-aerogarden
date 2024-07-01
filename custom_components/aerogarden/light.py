@@ -1,68 +1,64 @@
 import logging
 
 from homeassistant.components.light import LightEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .. import aerogarden
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-DEPENDENCIES = ["aerogarden"]
+
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Set up the Aerogarden light platform."""
+    aerogarden_api = hass.data[DOMAIN][entry.entry_id]
+    lights = []
+
+    for garden in aerogarden_api.gardens:
+        lights.append(AerogardenLight(garden, aerogarden_api))
+
+    async_add_entities(lights, True)
 
 
 class AerogardenLight(LightEntity):
+    """Representation of an Aerogarden light."""
+
     def __init__(self, macaddr, aerogarden_api, field="lightStat", label="light"):
+        """Initialize the light."""
         self._aerogarden = aerogarden_api
         self._macaddr = macaddr
         self._field = field
-        self._label = label
-        if not label:
-            self._label = field
-
-        self._garden_name = self._aerogarden.garden_property(
-            self._macaddr, "plantedName"
-        )
-
-        self._name = "%s %s %s" % (
-            aerogarden.DOMAIN,
-            self._garden_name,
-            self._label,
-        )
-        self._attr_unique_id = self._macaddr + self._label
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-        _LOGGER.debug("Initialized garden lightStat:\n%s", vars(self))
+        self._attr_name = f"{DOMAIN} {self._aerogarden.garden_property(self._macaddr, 'plantedName')} {label}"
+        self._attr_unique_id = f"{self._macaddr}_{label}"
+        self._attr_is_on = False
 
     @property
-    def name(self):
-        return self._name
+    def device_info(self) -> DeviceInfo:
+        """Return device information about this Aerogarden device."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._macaddr)},
+            name=self._aerogarden.garden_property(self._macaddr, "plantedName"),
+            manufacturer="Aerogarden",
+            model="Aerogarden",  # You might want to get the actual model if available
+        )
 
-    @property
-    def is_on(self):
-        if self._state == 1:
-            return True
-        return False
+    async def async_turn_on(self, **kwargs):
+        """Turn the light on."""
+        await self._aerogarden.light_toggle(self._macaddr)
+        self._attr_is_on = True
 
-    def turn_on(self, **kwargs):
-        self._aerogarden.light_toggle(self._macaddr)
-        self._state = 1
+    async def async_turn_off(self, **kwargs):
+        """Turn the light off."""
+        await self._aerogarden.light_toggle(self._macaddr)
+        self._attr_is_on = False
 
-    def turn_off(self, **kwargs):
-        self._aerogarden.light_toggle(self._macaddr)
-        self._state = 0
-
-    def update(self):
-        self._aerogarden.update()
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-
-def setup_platform(hass, config, add_devices, discovery_info=None):
-    """Setup the Aerogarden platform"""
-
-    ag = hass.data[aerogarden.DOMAIN]
-
-    lights = []
-
-    for garden in ag.gardens:
-        lights.append(AerogardenLight(garden, ag))
-
-    add_devices(lights)
+    async def async_update(self) -> None:
+        """Fetch new state data for the light."""
+        await self._aerogarden.throttled_update()
+        self._attr_is_on = (
+            self._aerogarden.garden_property(self._macaddr, self._field) == 1
+        )

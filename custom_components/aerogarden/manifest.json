@@ -7,12 +7,14 @@
   "codeowners": [
     "@jacobdonenfeld"
   ],
+  "config_flow": true,
   "dependencies": [
     "device_tracker",
     "binary_sensor",
     "light"
   ],
   "documentation": "https://github.com/jacobdonenfeld/homeassistant-aerogarden",
+  "homekit": {},
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/jacobdonenfeld/homeassistant-aerogarden/issues",
   "requirements": [],

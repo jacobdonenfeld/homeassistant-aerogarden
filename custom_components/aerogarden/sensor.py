@@ -1,87 +1,54 @@
 import logging
 
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.sensor import SensorEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .. import aerogarden
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-DEPENDENCIES = ["aerogarden"]
+SENSOR_FIELDS = {
+    "plantedDay": {"label": "Planted Days", "icon": "mdi:calendar", "unit": "Days"},
+    "nutriRemindDay": {
+        "label": "Nutrient Days",
+        "icon": "mdi:calendar-clock",
+        "unit": "Days",
+    },
+    "pumpLevel": {
+        "label": "pump_level",
+        "icon": "mdi:water-percent",
+        "unit": "Fill Level",
+    },
+}
 
 
-class AerogardenSensor(Entity):
-    def __init__(
-        self, macaddr, aerogarden_api, field, label=None, icon=None, unit=None
-    ):
-        self._aerogarden = aerogarden_api
-        self._macaddr = macaddr
-        self._field = field
-        self._label = label
-        if not label:
-            self._label = field
-        self._icon = icon
-        self._unit = unit
-
-        self._garden_name = self._aerogarden.garden_name(self._macaddr)
-
-        self._name = "%s %s" % (
-            self._garden_name,
-            self._label,
-        )
-        self._attr_unique_id = self._macaddr + self._label
-
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-        _LOGGER.debug("Initialized garden sensor %s:\n%s", field, vars(self))
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def state(self):
-        return self._state
-
-    @property
-    def icon(self):
-        return self._icon
-
-    @property
-    def unit_of_measurement(self):
-        return self._unit
-
-    def update(self):
-        self._aerogarden.update()
-        self._state = self._aerogarden.garden_property(self._macaddr, self._field)
-
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Setup the aerogarden platform"""
-
-    ag = hass.data[aerogarden.DOMAIN]
-
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+) -> None:
+    """Set up the Aerogarden sensor platform."""
+    aerogarden_api = hass.data[DOMAIN][entry.entry_id]
     sensors = []
-    sensor_fields = {
-        "plantedDay": {"label": "Planted Days", "icon": "mdi:calendar", "unit": "Days"},
-        "nutriRemindDay": {
-            "label": "Nutrient Days",
-            "icon": "mdi:calendar-clock",
-            "unit": "Days",
-        },
-        "pumpLevel": {
-            "label": "pump_level",
-            "icon": "mdi:water-percent",
-            "unit": "Fill Level",
-        },
-    }
 
-    for garden in ag.gardens:
-        for field in sensor_fields.keys():
-            s = sensor_fields[field]
+    for garden in aerogarden_api.gardens:
+        for field, attributes in SENSOR_FIELDS.items():
             sensors.append(
                 AerogardenSensor(
-                    garden, ag, field, label=s["label"], icon=s["icon"], unit=s["unit"]
+                    garden,
+                    aerogarden_api,
+                    field,
+                    attributes["label"],
+                    attributes["icon"],
+                    attributes["unit"],
                 )
             )
 
-    add_entities(sensors)
+    async_add_entities(sensors, True)
+
+
+class AerogardenSensor(SensorEntity):
+    """Representation of an Aerogarden sensor."""
+
+    def __init__(self, macaddr, aerogarden_api, field, label, icon, unit):
+        """Initialize the sensor."""
