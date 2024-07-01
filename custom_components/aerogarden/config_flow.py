@@ -3,24 +3,25 @@ from typing import Any, Dict, Optional
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.exceptions import ConfigEntryNotReady
 
 from .api import AerogardenAPI
-from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_HOST, DOMAIN
+from .const import DEFAULT_HOST, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_USERNAME): str,
+        vol.Required(CONF_EMAIL): str,
         vol.Required(CONF_PASSWORD): str,
     }
 )
 
 
-class AerogardenConfigFlow(config_entries.ConfigFlow):
+class AerogardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def async_step_user(
@@ -28,19 +29,19 @@ class AerogardenConfigFlow(config_entries.ConfigFlow):
     ) -> FlowResult:
         errors = {}
         if user_input is not None:
-            username = user_input[CONF_USERNAME]
+            email = user_input[CONF_EMAIL]
             password = user_input[CONF_PASSWORD]
 
-            ag = AerogardenAPI(self.hass, username, password, DEFAULT_HOST)
+            ag = AerogardenAPI(self.hass, email, password, DEFAULT_HOST)
             try:
                 is_valid = await ag.login()
                 if is_valid:
-                    # Check if this username is already configured
-                    await self.async_set_unique_id(username)
+                    # Check if this email is already configured
+                    await self.async_set_unique_id(email)
                     self._abort_if_unique_id_configured()
 
                     return self.async_create_entry(
-                        title=f"Aerogarden ({username})", data=user_input
+                        title=f"Aerogarden ({email})", data=user_input
                     )
                 else:
                     errors["base"] = "invalid_auth"
@@ -59,10 +60,10 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: config_entries.ConfigEntry
 ) -> bool:
     """Set up Aerogarden from a config entry."""
-    username = entry.data[CONF_USERNAME]
+    email = entry.data[CONF_EMAIL]
     password = entry.data[CONF_PASSWORD]
 
-    ag = AerogardenAPI(hass, username, password, DEFAULT_HOST)
+    ag = AerogardenAPI(hass, email, password, DEFAULT_HOST)
 
     try:
         is_valid = await ag.login()
