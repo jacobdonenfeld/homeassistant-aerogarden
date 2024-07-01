@@ -12,7 +12,7 @@ from custom_components.aerogarden.const import DOMAIN
 class MockConfigEntry:
     domain: str
     data: dict
-    unique_id: str = None
+    unique_id: str | None = None
 
     def add_to_hass(self, hass):
         """Mock add config to hass."""

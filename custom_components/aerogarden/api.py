@@ -39,19 +39,27 @@ class AerogardenAPI:
         return self._error_msg
 
     async def login(self) -> bool:
-        post_data = f"mail={self._username}&userPwd={self._password}"
+        post_data = {"mail": self._username, "userPwd": self._password}
         response = await self._post_request(self._login_url, post_data)
 
         if not response:
             _LOGGER.error("Issue logging into Aerogarden servers.")
             return False
 
-        userid = response.get("code")
+        userid: int | None = response.get("code")
         if userid and userid > 0:
             self._userid = str(userid)
             return True
+        elif userid == -2:
+            self._error_msg = "Account could not be found"
+            _LOGGER.error(self._error_msg)
+            return False
+        elif userid == -4:
+            self._error_msg = f"Invalid Credentials for {self._username}"
+            _LOGGER.error(self._error_msg)
+            return False
         else:
-            self._error_msg = f"Login API call returned {response.get('code')}"
+            self._error_msg = f"Unknown error logging in: {response.get('msg')}"
             _LOGGER.error(self._error_msg)
             return False
 
@@ -73,14 +81,12 @@ class AerogardenAPI:
             _LOGGER.debug(f"light_toggle called for unknown macaddr: {macaddr}")
             return False
 
-        post_data = json.dumps(
-            {
-                "airGuid": macaddr,
-                "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
-                "userID": self._userid,
-                "plantConfig": f'{{ "lightTemp" : {self.garden_property(macaddr, "lightTemp")} }}',
-            }
-        )
+        post_data = {
+            "airGuid": macaddr,
+            "chooseGarden": self.garden_property(macaddr, "chooseGarden"),
+            "userID": self._userid,
+            "plantConfig": f'{{ "lightTemp" : {self.garden_property(macaddr, "lightTemp")} }}',
+        }
 
         results = await self._post_request(self._update_url, post_data)
         if not results:
@@ -104,7 +110,7 @@ class AerogardenAPI:
             if not await self.login():
                 return False
 
-        post_data = f"userID={self._userid}"
+        post_data = {"userID": self._userid}
         garden_data = await self._post_request(self._status_url, post_data)
 
         if not garden_data:
@@ -116,13 +122,16 @@ class AerogardenAPI:
             return False
 
         new_data = {}
+        # Debug message
+        _LOGGER.info(json.dumps(garden_data, indent=2))
         for garden in garden_data:
             if "plantedName" in garden:
-                garden["plantedName"] = base64.b64decode(garden["plantedName"]).decode(
-                    "utf-8"
+                garden["plantedName"] = str(
+                    base64.b64decode(garden["plantedName"]).decode("utf-8")
                 )
-
-            garden_id = garden.get("configID")
+            garden_id = None
+            if "configID" in garden:
+                garden_id = garden["configID"]
             garden_mac = (
                 f"{garden['airGuid']}-{'' if garden_id is None else str(garden_id)}"
             )
@@ -136,7 +145,9 @@ class AerogardenAPI:
         # Call the update method
         return await self.update()
 
-    async def _post_request(self, url: str, post_data: str) -> Optional[Dict[str, Any]]:
+    async def _post_request(
+        self, url: str, post_data: dict
+    ) -> Optional[dict[str, Any]]:
         session = async_get_clientsession(self._hass)
         try:
             async with async_timeout.timeout(10):

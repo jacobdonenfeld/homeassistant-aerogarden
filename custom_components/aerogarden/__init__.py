@@ -29,12 +29,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "password": password,
     }
 
-    ag = AerogardenAPI(username, password, DEFAULT_HOST)
+    ag = AerogardenAPI(hass, username, password, DEFAULT_HOST)
     if not ag.is_valid_login():
         _LOGGER.error("Invalid login: %s" % ag.error)
-        return
+        return False
 
-    ag.update()
+    _ = await ag.update()
 
     # store the aerogarden API object into hass data system
     hass.data[DOMAIN] = ag

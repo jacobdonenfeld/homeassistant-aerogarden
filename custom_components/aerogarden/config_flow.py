@@ -20,7 +20,7 @@ CONFIG_SCHEMA = vol.Schema(
 )
 
 
-class AerogardenConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class AerogardenConfigFlow(config_entries.ConfigFlow):
     VERSION = 1
 
     async def async_step_user(
