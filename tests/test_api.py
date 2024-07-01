@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-import pytest
 from homeassistant.core import HomeAssistant
+import pytest
 
 from custom_components.aerogarden.api import AerogardenAPI
 
