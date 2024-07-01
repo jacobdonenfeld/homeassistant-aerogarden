@@ -16,9 +16,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class AerogardenAPI:
-    def __init__(self, hass: HomeAssistant, username: str, password: str, host: str):
+    def __init__(self, hass: HomeAssistant, email: str, password: str, host: str):
         self._hass = hass
-        self._username = username
+        self._email = email
         self._password = password
         self._host = host
         self._userid: Optional[str] = None
@@ -39,7 +39,7 @@ class AerogardenAPI:
         return self._error_msg
 
     async def login(self) -> bool:
-        post_data = {"mail": self._username, "userPwd": self._password}
+        post_data = {"mail": self._email, "userPwd": self._password}
         response = await self._post_request(self._login_url, post_data)
 
         if not response:
@@ -55,7 +55,7 @@ class AerogardenAPI:
             _LOGGER.error(self._error_msg)
             return False
         elif userid == -4:
-            self._error_msg = f"Invalid Credentials for {self._username}"
+            self._error_msg = f"Invalid Credentials for {self._email}"
             _LOGGER.error(self._error_msg)
             return False
         else:

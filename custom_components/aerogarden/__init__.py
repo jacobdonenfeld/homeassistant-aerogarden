@@ -1,11 +1,11 @@
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant
 
 from .api import AerogardenAPI
-from .const import CONF_PASSWORD, CONF_USERNAME, DEFAULT_HOST, DOMAIN
+from .const import DEFAULT_HOST, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,18 +18,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Aerogarden from a config entry."""
     hass.data.setdefault(DOMAIN, {})
 
-    username = entry.data[CONF_USERNAME]
+    email = entry.data[CONF_EMAIL]
     password = entry.data[CONF_PASSWORD]
 
     # Use the username and password to set up aerogarden
 
     # If the setup is successful:
     hass.data[DOMAIN][entry.entry_id] = {
-        "username": username,
+        "email": email,
         "password": password,
     }
 
-    ag = AerogardenAPI(hass, username, password, DEFAULT_HOST)
+    ag = AerogardenAPI(hass, email, password, DEFAULT_HOST)
     if not ag.is_valid_login():
         _LOGGER.error("Invalid login: %s" % ag.error)
         return False
