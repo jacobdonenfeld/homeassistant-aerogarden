@@ -8,5 +8,3 @@ MIN_TIME_BETWEEN_UPDATES = timedelta(seconds=30)
 DOMAIN: Final = "aerogarden"
 MANUFACTURER: Final = "Aerogarden"
 UPDATE_INTERVAL: float = 30.0
-CONF_USERNAME: str = ""
-CONF_PASSWORD = ""

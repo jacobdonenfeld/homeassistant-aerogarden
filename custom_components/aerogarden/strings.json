@@ -5,7 +5,7 @@
           "title": "Identify the device",
           "description": "Provide Aerogarden account credentials",
           "data": {
-            "ip_address": "[%key:common::config_flow::data::ip%]",
+            "email": "[%key:common::config_flow::data::email%]",
             "password": "[%key:common::config_flow::data::password%]"
           },
           "data_description": {
