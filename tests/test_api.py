@@ -77,11 +77,12 @@ async def test_update_failure(api):
 async def test_light_toggle_success(api):
     api._userid = "123"  # Simulate successful login
     api._data = {"AA:BB:CC:DD:EE:FF-1": {"chooseGarden": 0, "lightTemp": 1}}
-    with patch(
-        "custom_components.aerogarden.api.AerogardenAPI._post_request"
-    ) as mock_post, patch(
-        "custom_components.aerogarden.api.AerogardenAPI.update"
-    ) as mock_update:
+    with (
+        patch(
+            "custom_components.aerogarden.api.AerogardenAPI._post_request"
+        ) as mock_post,
+        patch("custom_components.aerogarden.api.AerogardenAPI.update") as mock_update,
+    ):
         mock_post.return_value = {"code": 1}
         mock_update.return_value = True
         result = await api.light_toggle("AA:BB:CC:DD:EE:FF-1")
@@ -119,10 +120,11 @@ def test_garden_property(api):
 @pytest.mark.asyncio
 async def test_update_throttle(api):
     api._userid = "123"  # Simulate successful login
-    with patch(
-        "custom_components.aerogarden.api.AerogardenAPI._post_request"
-    ) as mock_post, patch(
-        "custom_components.aerogarden.api.MIN_TIME_BETWEEN_UPDATES", new=1
+    with (
+        patch(
+            "custom_components.aerogarden.api.AerogardenAPI._post_request"
+        ) as mock_post,
+        patch("custom_components.aerogarden.api.MIN_TIME_BETWEEN_UPDATES", new=1),
     ):
         mock_post.return_value = [{"airGuid": "AA:BB:CC:DD:EE:FF", "configID": 1}]
 
