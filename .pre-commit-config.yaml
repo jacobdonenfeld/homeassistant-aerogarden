@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.9.4
     hooks:
       - id: ruff
         args:
@@ -8,7 +8,7 @@ repos:
       - id: ruff-format
         files: ^((homeassistant|pylint|script|tests)/.+)?[^/]+\.(py|pyi)$
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args:
@@ -18,7 +18,7 @@ repos:
         exclude_types: [csv, json, html]
         exclude: ^tests/fixtures/generated/|tests/components/.*/snapshots/
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.6.0
+      rev: v5.0.0
       hooks:
         #-  id: check-yaml # disabled atm due to https://github.com/pre-commit/pre-commit-hooks/issues/577
         -   id: check-json
@@ -31,7 +31,7 @@ repos:
             args: ["--fix=lf"]
 
   -   repo: https://github.com/psf/black
-      rev: 24.4.2
+      rev: 25.1.0
       hooks:
         - id: black
           language_version: python3.12
@@ -44,18 +44,18 @@ repos:
   #     - --ignore-missing-imports
   #     - --check-untyped-defs
   -   repo: https://github.com/PyCQA/isort
-      rev: 5.13.2
+      rev: 6.0.0
       hooks:
         - id: isort
           args: [ --profile=black ]
   -   repo: https://github.com/sirosen/check-jsonschema
-      rev: 0.28.6
+      rev: 0.31.1
       hooks:
         - id: check-github-actions
         - id: check-github-workflows
 
   -   repo: https://github.com/pycqa/flake8
-      rev: 7.1.0
+      rev: 7.1.1
       hooks:
         - id: flake8
 
