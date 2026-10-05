@@ -2,7 +2,7 @@ import asyncio
 import base64
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import aiohttp
 import async_timeout
@@ -21,9 +21,9 @@ class AerogardenAPI:
         self._email = email
         self._password = password
         self._host = host
-        self._userid: Optional[str] = None
-        self._error_msg: Optional[str] = None
-        self._data: Dict[str, Any] = {}
+        self._userid: str | None = None
+        self._error_msg: str | None = None
+        self._data: dict[str, Any] = {}
 
         self._login_url = f"{self._host}/api/Admin/Login"
         self._status_url = f"{self._host}/api/CustomData/QueryUserDevice"
@@ -35,7 +35,7 @@ class AerogardenAPI:
         }
 
     @property
-    def error(self) -> Optional[str]:
+    def error(self) -> str | None:
         return self._error_msg
 
     async def login(self) -> bool:
@@ -66,7 +66,7 @@ class AerogardenAPI:
     def is_valid_login(self) -> bool:
         return self._userid is not None
 
-    def garden_name(self, macaddr: str) -> Optional[str]:
+    def garden_name(self, macaddr: str) -> str | None:
         multi_garden = self.garden_property(macaddr, "chooseGarden")
         if multi_garden is None:
             return self.garden_property(macaddr, "plantedName")
@@ -145,21 +145,18 @@ class AerogardenAPI:
         # Call the update method
         return await self.update()
 
-    async def _post_request(
-        self, url: str, post_data: dict
-    ) -> Optional[dict[str, Any]]:
+    async def _post_request(self, url: str, post_data: dict) -> dict[str, Any] | None:
         session = async_get_clientsession(self._hass)
         try:
-            async with async_timeout.timeout(10):
-                async with session.post(
-                    url, data=post_data, headers=self._headers
-                ) as response:
-                    if response.status != 200:
-                        _LOGGER.error(
-                            f"HTTP error {response.status} while requesting {url}"
-                        )
-                        return None
-                    return await response.json()
+            async with async_timeout.timeout(10), session.post(
+                url, data=post_data, headers=self._headers
+            ) as response:
+                if response.status != 200:
+                    _LOGGER.error(
+                        f"HTTP error {response.status} while requesting {url}"
+                    )
+                    return None
+                return await response.json()
         except aiohttp.ClientError as err:
             _LOGGER.error(f"Error requesting data from {url}: {err}")
         except json.JSONDecodeError:
